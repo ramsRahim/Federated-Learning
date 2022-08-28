@@ -2,7 +2,7 @@ import numpy as np
 import random
 import os
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelBinarizer
+from sklearn.preprocessing import LabelBinarizer 
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 from sklearn.metrics import accuracy_score
@@ -19,14 +19,17 @@ from tensorflow.keras import backend as K
 
 from fl_implementation_utils import *
 
-data_path = '/path/to/your/training/dataset'
+data_path = '/home/rahim/exp/FL/swarm_aligned'
 
 #apply our function
 data_list, label_list = load(data_path)
+labels = list(set(label_list.tolist())) #unique labels
 
 #binarize the labels
-lb = LabelBinarizer()
-label_list = lb.fit_transform(label_list)
+#lb = LabelBinarizer()
+#label_list = lb.fit_transform(label_list)
+n_values = np.max(label_list) + 1
+label_list = np.eye(n_values)[label_list]
 
 #split data into training and test set
 X_train, X_test, y_train, y_test = train_test_split(data_list, 
@@ -40,7 +43,7 @@ clients = create_clients(X_train, y_train, num_clients=10, initial='client')
 #process and batch the training data for each client
 clients_batched = dict()
 for (client_name, data) in clients.items():
-    clients_batched[client_name] = fl.batch_data(data)
+    clients_batched[client_name] = batch_data(data)
     
 #process and batch the test set  
 test_batched = tf.data.Dataset.from_tensor_slices((X_test, y_test)).batch(len(y_test))
@@ -57,8 +60,9 @@ optimizer = SGD(lr=lr,
                ) 
 
 #initialize global model
+#print(data_list.shape,labels)
 smlp_global = SimpleMLP()
-global_model = smlp_global.build(data_list.shape[1], label_list.unique())
+global_model = smlp_global.build(data_list.shape[1],len(labels))
         
 #commence global training loop
 for comm_round in range(comms_round):
@@ -76,11 +80,13 @@ for comm_round in range(comms_round):
     #loop through each client and create new local model
     for client in client_names:
         smlp_local = SimpleMLP()
-        local_model = smlp_local.build(data_list.shape[1], label_list.unique())
+        local_model = smlp_local.build(data_list.shape[1],len(labels))
         local_model.compile(loss=loss, 
                       optimizer=optimizer, 
                       metrics=metrics)
         
+        #print(local_model.summary())
+        #print(clients_batched)
         #set local model weight to the weight of the global model
         local_model.set_weights(global_weights)
         
@@ -107,7 +113,7 @@ for comm_round in range(comms_round):
 
 SGD_dataset = tf.data.Dataset.from_tensor_slices((X_train, y_train)).shuffle(len(y_train)).batch(320)
 smlp_SGD = SimpleMLP()
-SGD_model = smlp_SGD.build(data_list.shape[1], label_list.unique()) 
+SGD_model = smlp_SGD.build(data_list.shape[1], len(labels)) 
 
 SGD_model.compile(loss=loss, 
               optimizer=optimizer, 
