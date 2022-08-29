@@ -6,6 +6,8 @@ from sklearn.preprocessing import LabelBinarizer
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 from sklearn.metrics import accuracy_score
+from tqdm import tqdm
+import time
 
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
@@ -78,7 +80,8 @@ for comm_round in range(comms_round):
     random.shuffle(client_names)
     
     #loop through each client and create new local model
-    for client in client_names:
+    for client in tqdm(client_names , desc = 'tqdm() Progress Bar'):
+        time.sleep(0.5)
         smlp_local = SimpleMLP()
         local_model = smlp_local.build(data_list.shape[1],len(labels))
         local_model.compile(loss=loss, 
