@@ -4,6 +4,7 @@ import os
 import pickle 
 import pandas as pd
 
+#from imutils import paths
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.model_selection import train_test_split
@@ -26,10 +27,11 @@ def load(paths):
    
     data = list()
     labels = list()
-    rawData = pickle.load(open('paths', 'rb'))
+    rawData = pickle.load(open(paths, 'rb'))
 
     keys=rawData.keys()
     data = rawData[keys[:keys.shape[0]-1]].values
+    data /= np.max(data)
     labels = rawData[keys[keys.shape[0]-1]].values
     return data, labels
 
@@ -80,12 +82,14 @@ class SimpleMLP:
     @staticmethod
     def build(shape, classes):
         model = Sequential()
-        model.add(Dense(200, input_shape=(shape,)))
+        model.add(Dense(500,input_shape=(shape,)))
+        model.add(Activation("relu"))
+        model.add(Dense(300))
         model.add(Activation("relu"))
         model.add(Dense(200))
         model.add(Activation("relu"))
         model.add(Dense(classes))
-        model.add(Activation("softmax"))
+        model.add(Activation("sigmoid"))
         return model
     
 
@@ -125,7 +129,8 @@ def test_model(X_test, Y_test,  model, comm_round):
     cce = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
     #logits = model.predict(X_test, batch_size=100)
     logits = model.predict(X_test)
+    #print(logits)
     loss = cce(Y_test, logits)
-    acc = accuracy_score(tf.argmax(logits, axis=1), tf.argmax(Y_test, axis=1))
+    acc = accuracy_score( tf.argmax(Y_test, axis=1),tf.argmax(logits, axis=1))
     print('comm_round: {} | global_acc: {:.3%} | global_loss: {}'.format(comm_round, acc, loss))
     return acc, loss

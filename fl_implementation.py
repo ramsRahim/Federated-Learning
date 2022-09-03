@@ -50,7 +50,7 @@ for (client_name, data) in clients.items():
 #process and batch the test set  
 test_batched = tf.data.Dataset.from_tensor_slices((X_test, y_test)).batch(len(y_test))
 
-comms_round = 100 #number of global epochs
+comms_round = 10 #number of global epochs
     
 #create optimizer
 lr = 0.01 
@@ -80,8 +80,8 @@ for comm_round in range(comms_round):
     random.shuffle(client_names)
     
     #loop through each client and create new local model
-    for client in tqdm(client_names , desc = 'tqdm() Progress Bar'):
-        time.sleep(0.5)
+    for client in tqdm(client_names , desc = 'Progress Bar'):
+        #time.sleep(0.5)
         smlp_local = SimpleMLP()
         local_model = smlp_local.build(data_list.shape[1],len(labels))
         local_model.compile(loss=loss, 
